@@ -139,19 +139,34 @@ function AssistantContent({
         </p>
       )}
 
-      {/* View artifact button */}
-      {hasArtifact && (
-        <button
-          onClick={() =>
-            onViewArtifact?.(response.artifact!.content, response.chat_message)
-          }
-          className="self-start flex items-center gap-1.5 text-sm font-medium text-accent
-                     hover:text-accent/80 transition-colors"
-          aria-label="View artifact visualization"
-        >
-          <span>→</span>
-          <span>View {response.output_type === 'dashboard' ? 'Dashboard' : 'Chart'}</span>
-        </button>
+      {/* View & Export Artifact Buttons */}
+      {response.artifact && (
+        <div className="flex flex-wrap items-center gap-4 mt-4">
+          <button
+            onClick={() => onViewArtifact!(response.artifact!.content, response.chat_message?.slice(0, 50) || 'Artifact visualization')}
+            className="text-accent hover:underline text-sm font-medium flex items-center gap-1"
+            aria-label="View artifact visualization"
+          >
+            <span>→</span>
+            <span>View {response.output_type === 'dashboard' ? 'Dashboard' : 'Chart'}</span>
+          </button>
+          
+          <button
+            onClick={() => {
+              const blob = new Blob([response.artifact!.content], { type: 'text/html' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `exported-${response.output_type || 'dashboard'}.html`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="text-accent hover:underline text-sm font-medium flex items-center gap-1"
+            title="Export HTML Dashboard"
+          >
+            ↓ Export HTML
+          </button>
+        </div>
       )}
 
       {/* Insight */}

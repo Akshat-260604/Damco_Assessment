@@ -259,10 +259,21 @@ async def query_data(request: QueryRequest):
     artifact = claude_response.get("artifact")
     artifact_obj = None
     if artifact and isinstance(artifact, dict) and artifact.get("content"):
+        html_content = artifact["content"]
+        
+        # Inject the real computed data into the HTML JS payload
+        if "RESULT_DATA" in html_content and execution_result:
+            import json
+            try:
+                data_json = json.dumps(execution_result.get("data"))
+                html_content = html_content.replace('"RESULT_DATA"', data_json).replace("'RESULT_DATA'", data_json).replace("RESULT_DATA", data_json)
+            except Exception as e:
+                logger.warning(f"Failed to serialize artifact data: {e}")
+
         from models.schemas import ArtifactContent
         artifact_obj = ArtifactContent(
             type=artifact.get("type", "html"),
-            content=artifact["content"],
+            content=html_content,
         )
 
     return QueryResponse(

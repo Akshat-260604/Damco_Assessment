@@ -43,7 +43,7 @@ const ArtifactPanel = forwardRef<ArtifactPanelRef>(function ArtifactPanel(_, ref
       className={[
         'flex flex-col bg-surface border-l border-border',
         'transition-all duration-300 ease-out',
-        isFullscreen ? 'fixed inset-0 z-50' : 'relative h-full',
+        isFullscreen ? 'fixed inset-0 z-50' : 'relative h-full resize-x overflow-auto min-w-[300px]',
         isFullscreen ? 'w-full' : 'w-full md:w-1/2',
         'animate-slide-in',
       ].join(' ')}
@@ -51,11 +51,11 @@ const ArtifactPanel = forwardRef<ArtifactPanelRef>(function ArtifactPanel(_, ref
       aria-label="Artifact panel"
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-accent text-sm">◈</span>
+      <div className="flex items-center justify-between px-2 sm:px-4 py-3 border-b border-border shrink-0 w-full overflow-hidden">
+        <div className="flex items-center gap-2 flex-1 min-w-0 pr-2">
+          <span className="text-accent text-sm shrink-0">◈</span>
           <h2
-            className="text-sm font-medium truncate max-w-xs"
+            className="text-sm font-medium truncate"
             title={artifact.title}
           >
             {artifact.title}
@@ -63,7 +63,28 @@ const ArtifactPanel = forwardRef<ArtifactPanelRef>(function ArtifactPanel(_, ref
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
-          {/* Export */}
+          {/* Export PDF */}
+          <button
+            onClick={async () => {
+              const { exportToPDF } = await import('@/lib/exportPDF');
+              const el = document.getElementById('artifact-panel-root');
+              if (el) await exportToPDF(document.createElement('div'), el);
+            }}
+            className="btn-ghost flex items-center gap-1.5"
+            title="Export as PDF"
+            aria-label="Export artifact as PDF"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span className="hidden sm:inline">PDF</span>
+          </button>
+
+          {/* Export HTML */}
           <button
             onClick={exportHTML}
             className="btn-ghost flex items-center gap-1.5"
@@ -75,7 +96,7 @@ const ArtifactPanel = forwardRef<ArtifactPanelRef>(function ArtifactPanel(_, ref
               <polyline points="7 10 12 15 17 10" />
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
-            <span className="hidden sm:inline">Export</span>
+            <span className="hidden sm:inline">HTML</span>
           </button>
 
           {/* Fullscreen toggle */}
@@ -118,7 +139,7 @@ const ArtifactPanel = forwardRef<ArtifactPanelRef>(function ArtifactPanel(_, ref
         <iframe
           ref={iframeRef}
           srcDoc={artifact.content}
-          sandbox="allow-scripts"
+          sandbox="allow-scripts allow-same-origin"
           title="Artifact visualization"
           className="w-full h-full border-0"
           aria-label="Visualization artifact"

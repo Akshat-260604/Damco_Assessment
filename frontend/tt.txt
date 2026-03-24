@@ -1,9 +1,9 @@
-┌─────────────────────────────────────────────────────────────────┐                                                                                                                         
-  │                        CLIENT REQUEST                           │                                                                                                                       
-  │                   (POST /api/upload or /api/query)              │                                                                                                                         
+┌─────────────────────────────────────────────────────────────────┐
+  │                        CLIENT REQUEST                           │
+  │                   (POST /api/upload or /api/query)              │
   └─────────────────────────┬───────────────────────────────────────┘
-                            │                                                                                                                                                                 
-                            ▼                               
+                            │
+                            ▼
   ┌─────────────────────────────────────────────────────────────────┐
   │                        main.py  (FastAPI)                       │
   │                                                                 │
@@ -13,8 +13,8 @@
   │     (ext, size, count)            2. Call claude_service       │
   │  2. parse_file() each             3. Execute agg code          │
   │  3. create_session()              4. Inject real values        │
-  │  4. store DataFrames              5. Return QueryResponse      │
-  │  5. analyze_dataframe()                                        │
+  │  4. store DataFrames              5. RESULT_DATA HTML Inject   │
+  │  5. analyze_dataframe()           6. Return QueryResponse      │
   │  6. generate_starter_questions()                               │
   │  7. Return UploadResponse                                      │
   └──────┬────────────────────────────────┬───────────────────────┘
@@ -49,28 +49,23 @@
   │    datetime /    │              │ • Serialize DFs to JSON  │
   │    text)         │              │ • Spawn subprocess       │
   │ • null %, unique │              │   (isolated execution)   │
-  │   count, stats   │              │ • 30s timeout watchdog   │
-  │ • top_values     │              │ • Deserialize result     │
-  │ • generate       │              │   (DataFrame / Series /  │
-  │   starter Qs     │              │    scalar / dict / error)│
+  │   count, stats   │              │ • Force OMP_NUM_THREADS=1│
+  │ • top_values     │              │ • 30s timeout watchdog   │
+  │ • generate       │              │ • Deserialize result     │
+  │   starter Qs     │              │   (DataFrame / Error)    │
   └──────────────────┘              └──────────────────────────┘
                                                │
          ┌─────────────────────────────────────┘
          ▼
-  ┌──────────────────┐
-  │ session_store.py │
-  │                  │
-  │ • UUID sessions  │
-  │ • Stores DFs     │
-  │   in memory      │
-  │ • Conversation   │
-  │   history log    │
-  │ • 24h TTL        │
-  │ • Thread-safe    │
-  │   Lock           │
-  │ • Hourly cleanup │
-  │   background task│
-  └──────────────────┘
+  ┌──────────────────┐         ┌──────────────────────────────────┐
+  │ session_store.py │         │       Next.js Frontend UI        │
+  │                  │         │                                  │
+  │ • UUID sessions  │         │ • ThemeContext (Light/Dark)      │
+  │ • Stores DFs     │   ◄──── │ • VoiceContext (Speech Recog)    │
+  │   in memory/disk │         │ • exportPDF (html2canvas)        │
+  │ • LRU Cache Swap │         │ • Iframe Artifact Sandboxing     │
+  │ • 24h TTL        │         │ • Interactive Source Citations   │
+  └──────────────────┘         └──────────────────────────────────┘
 
   ---
   Request flows
@@ -88,6 +83,7 @@
                    → claude_service.py (system prompt + history → Bedrock)
                    → code_executor.py (AST check → subprocess → result)
                    → _inject_result_value() (replace RESULT_VALUE placeholder)
+                   → RESULT_DATA Injection (inject JSON into HTML artifact)
                    → session_store.py (append to history)
                    ← QueryResponse (chat_message, artifact HTML, insight)
 
@@ -97,17 +93,15 @@
   ┌─────────────────────────────┬────────────────────────────────────────────────────────────────────┐
   │          Decision           │                               Reason                               │
   ├─────────────────────────────┼────────────────────────────────────────────────────────────────────┤
-  │ In-memory sessions          │ MVP simplicity — no DB dependency                                  │
+  │ In-memory caching/LRU       │ MVP blistering read/write speed for EDA; gracefully pages to disk  │
   ├─────────────────────────────┼────────────────────────────────────────────────────────────────────┤
-  │ Subprocess execution        │ Isolates user code from server process                             │
+  │ Subprocess execution        │ Isolates user computation from web server; fast & avoids Docker lag│
   ├─────────────────────────────┼────────────────────────────────────────────────────────────────────┤
-  │ AST validation before exec  │ Blocks dangerous ops before subprocess even spawns                 │
+  │ AST validation before exec  │ Drops OS/sys/subprocess hacking instantly before spawned execution │
   ├─────────────────────────────┼────────────────────────────────────────────────────────────────────┤
-  │ RESULT_VALUE placeholder    │ Claude never invents numbers — real value injected after execution │
+  │ RESULT_DATA & RESULT_VALUE  │ Python natively intercepts & injects math, preventing LLM falsehood│
   ├─────────────────────────────┼────────────────────────────────────────────────────────────────────┤
-  │ Schema injected into prompt │ Claude knows column names, types, stats without seeing raw data    │
+  │ Schema injected into prompt │ Claude knows column names, types, stats without seeing raw PII data│
   ├─────────────────────────────┼────────────────────────────────────────────────────────────────────┤
-  │ Conversation history        │ Enables follow-up questions with full context                      │
-  ├─────────────────────────────┼────────────────────────────────────────────────────────────────────┤
-  │ chardet + multi-delimiter   │ Handles real-world messy CSV files reliably                        │
+  │ Client-side PDF Export      │ Bypasses complex Puppeteer servers by snapshotting DOM natively    │
   └─────────────────────────────┴────────────────────────────────────────────────────────────────────┘

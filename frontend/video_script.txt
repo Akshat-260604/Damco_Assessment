@@ -1,0 +1,84 @@
+========================================================================================
+                        VIDEO PRESENTATION DICTATION SCRIPT
+========================================================================================
+
+TIMING BREAKDOWN:
+- Problem Framing (2-3 min)
+- System Design (5-6 min)
+- Tradeoffs (3-4 min)
+- Failure Modes (2 min)
+
+----------------------------------------------------------------------------------------
+SECTION 1: PROBLEM FRAMING (2-3 MINUTES)
+----------------------------------------------------------------------------------------
+👉 VISUAL: Open your web browser showing the blank, clean landing page of your BI Tool (the "Upload your data" screen). Move your mouse around naturally.
+
+SPEAKER (Read exactly):
+"Hi everyone, today I'll be walking you through the architecture and design decisions behind my Autonomous Business Intelligence Platform.
+
+The core problem I chose to solve is the massive gap between raw enterprise data and actionable business insights. In traditional organizations, business stakeholders have messy, massive data dumps spanning millions of rows in Excel or CSV. To extract any value or dashboards from that data, they either have to learn complex Python Pandas scripting themselves—which is an incredibly steep learning curve—or log a ticket with a Data Analyst team and wait weeks.
+
+Worse yet, the recent boom of AI tools like ChatGPT doesn't actually solve this securely. If an enterprise wants to analyze deeply sensitive data, like patient records or raw financial transactions, sending millions of rows over the internet to a cloud AI model is a massive compliance and privacy violation.
+
+So, the problem statement was: How do we give non-technical business users the exact power of a Senior Data Analyst using Generative AI, while mathematically guaranteeing that zero rows of their raw sensitive data are ever sent outside their secure firewall? This is computationally very hard because Large Language Models inherently want to 'see' the data to write code for it, and securing dynamically-generated code against an enterprise server is a nightmare."
+
+----------------------------------------------------------------------------------------
+SECTION 2: SYSTEM DESIGN & DATA FLOWS (5-6 MINUTES)
+----------------------------------------------------------------------------------------
+👉 VISUAL: Open `tt.txt` and highlight the ASCII Architecture Diagram at the top.
+
+SPEAKER:
+"Let's walk through the exact data flow that solves this. The platform is broken into a high-performance React/Next.js frontend and an asynchronous FastAPI Python backend.
+
+When a user uploads a file, the system intercepts it with a custom parser pipeline. Instead of blindly sending the file to the AI, my `schema_analyzer.py` engine reverse-engineers a highly detailed metadata map. It infers semantic data types, calculates column uniqueness, null-percentages, and mathematical bounding-box statistics. 
+
+We take ONLY that aggregated, anonymized Schema—basically just the column headers and high-level structure—and we inject it into a deterministic System Prompt, which is then routed to AWS Bedrock's Claude Sonnet model."
+
+👉 VISUAL: Switch your screen to show `backend/services/claude_service.py` specifically the schema part of the prompt, or `backend/schema_analyzer.py`.
+
+SPEAKER:
+"By giving Claude the perfect topographical map of the data, the AI acts entirely 'blind.' It writes sophisticated, multi-step Pandas aggregation code and completely constructs an interactive HTML Dashboard artifact, all without ever seeing an actual row of PII data.
+
+But generating code is easy; executing it securely is the hard part. The AI returns a JSON payload containing logic stringified as Python code. If we just ran `eval()` on that, the server would be compromised in seconds."
+
+👉 VISUAL: Now switch to `backend/services/code_executor.py` and highlight the `_validate_ast` function.
+
+SPEAKER:
+"Before any code runs, my execution engine parses the AI's output into an Abstract Syntax Tree (AST). It deeply traverses the Python grammar graph. We forcefully drop any imports not explicitly in our mathematical whitelist—like pandas or numpy—and immediately fatally crash references to OS, generic imports, or subprocess modules.
+
+Once the AST graph passes the security firewall, we boot an isolated, OS-level multiprocessing spawn. We actually heavily neuter the multiprocessor by forcing `OMP_NUM_THREADS=1` and overriding OpenBLAS limits to cleanly intercept system thread locks on macOS and Linux."
+
+👉 VISUAL: Switch to your browser, upload an Excel file, and ask a question like 'Show revenue by region as a bar chart'. Let the UI render the beautiful dashboard. Then show them the PDF export button.
+
+SPEAKER:
+"Finally, here's my favorite architectural component. The AI is trained to output a complete HTML Dashboard, but LLMs famously hallucinate data. If the AI writes the HTML before the Python code executes, how can the numbers be real?
+
+To solve this, my system prompt instructs the AI to drop a highly specific JavaScript anchor tag—`RESULT_DATA`—into the DOM. The Python code executes in the sandbox, computes the ground-truth mathematical dataframe, and then the backend FastAPI server aggressively intercepts the HTML payload and natively injects the JSON tree directly into the JavaScript context just milliseconds before streaming it to the React frontend. The result is mathematically flawless charts seamlessly rendered in an iframe sandbox. And to make it enterprise-ready, I built a pure client-side PDF export utility that captures these sandboxed iframes into shareable multi-page reports."
+
+----------------------------------------------------------------------------------------
+SECTION 3: TRADEOFFS (3-4 MINUTES)
+----------------------------------------------------------------------------------------
+👉 VISUAL: Switch back to the BI Tool UI chat interface, perhaps toggling dark / light mode to show the new theme capabilities.
+
+SPEAKER:
+"In building this, I made a few heavy technical tradeoffs. 
+
+The first tradeoff was Session Storage. Instead of standing up a heavy Postgres or Redis cluster, I built a custom Thread-Safe LRU memory store in the backend (`session_store.py`). To prevent memory exhaustion during heavy EDA, I implemented an intelligent paging system: when memory pressure spikes, inactive Pandas Dataframes are compressed and paged tightly to the local disk, keeping the read/write speed blisteringly fast when a user queries it, but keeping infrastructure complexity down. If I were scaling this horizontally, I would trade this off for a formal Redis cluster, but for single-tenant or team deployment, the latency wins here are massive.
+
+The second massive tradeoff was using the `multiprocessing` library for the Sandbox instead of spinning up isolated Docker containers for every query. A Docker container is vastly more secure, but provisioning a cold-start container takes anywhere from 400 to 800 milliseconds. For an interactive chat application natively supporting Voice interaction, adding nearly a second of latency on top of LLM generation ruins the user experience. By trading off raw containerization for a rigorously defined AST-parser and a strict multiprocessing boundary, I kept the response execution time under 50 milliseconds while maintaining very robust isolation.
+
+The final tradeoff was instructing the AI to build raw HTML artifacts natively, rather than having the AI return raw JSON datasets that my React frontend would map to predefined components like Recharts or D3. By letting the AI write raw HTML/JS, I traded away strict UI conformity in exchange for infinite flexibility. The AI can natively import Chart.js, build completely custom grid layouts, or write whatever bespoke KPI card visualizations fit the data best natively."
+
+----------------------------------------------------------------------------------------
+SECTION 4: FAILURE MODES (2 MINUTES)
+----------------------------------------------------------------------------------------
+👉 VISUAL: Open `backend/services/code_executor.py` again and highlight lines involving `proc.join(timeout=CODE_EXECUTION_TIMEOUT)` and `proc.terminate()`.
+
+SPEAKER:
+"Finally, let's talk about what happens when the system breaks, and how I engineered it to fail gracefully.
+
+The most catastrophic failure mode is an infinite loop or a memory-crashing Cartesian explosion—for instance, if the AI tells pandas to merge two massive dataframes on identical non-unique keys without limits. To defend against this, the isolated worker process is tethered to a strict watchdog timer. If the OS-level process does not fully complete mathematical evaluation and serialization within a 30-second window, the main thread brutally sends a SIGKILL command using `proc.terminate()`, instantly reclaiming the memory and returning a graceful 'Execution Timeout' error to the UI without touching the main web server.
+
+Another common failure mode is hallucinated column references. If the user asks a confusing question, the AI might generate syntax-perfect Pandas code that attempts to index a column named `'Sales'`, but the true schema column is named `'sales_revenue'`. In this scenario, the Python sandbox catches the exact `KeyError` traceback, serializes the exception, and pipes the failure back to the frontend. The system is designed to eventually parse these errors so the agent can silently correct itself, but currently, it safely outputs the execution traceback so the user knows exactly why the visualization failed to build. 
+ˀ
+And that covers the core problem framing, the architectural design, the technical tradeoffs, and the failure constraints. Thank you!"

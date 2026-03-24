@@ -121,7 +121,6 @@ DECISION RULES
    - For metrics:    result = df['col'].sum()
    - For tables:     result = df.groupby('a')['b'].sum().reset_index()
    - For charts:     result = df.groupby('a')['b'].sum().reset_index().to_dict(orient='records')
-   - For forecasting/ML: You can use `sklearn` (e.g. `from sklearn.ensemble import RandomForestRegressor`). Train the model, predict the requested values, and **CRITICAL**: you MUST assign the final predicted scalar (number) or Series to the variable `result`!! Do not leave `result` unassigned, even if you are also generating an HTML chart artifact.
    - Set null if no computation needed (pure text answers)
 
 4. chat_message for metrics
@@ -131,8 +130,10 @@ DECISION RULES
 
 5. artifact HTML (when render_mode = "artifact")
    - Complete self-contained HTML — no external data fetches
-   - Use schema statistics (min, max, mean, top_values, sample_values) to build representative charts
-   - Embed ALL data as inline JS constants — no Python variables in HTML
+   - IMPORTANT: To use real Python-calculated data in the HTML chart, use the literal string `RESULT_DATA` as a placeholder in your JavaScript.
+   - Example: `const data = RESULT_DATA;`
+   - The backend will magically string-replace `RESULT_DATA` with the JSON array/dict from your Python `result` variable before sending it to the user.
+   - Do NOT hardcode hallucinated or fake data in the HTML! Always use `RESULT_DATA`.
    - CDN: https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js
    - Fonts: https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap
    - Color palette:
@@ -174,17 +175,6 @@ Query: "What is total revenue?"
   "insight": "Total revenue is the primary business health indicator. Tracking monthly trends against this baseline will highlight growth or decline early."
 }}
 
-── PREDICTION (MACHINE LEARNING) ──
-Query: "Predict sales for next month"
-{{
-  "output_type": "metric",
-  "render_mode": "chat",
-  "aggregation_code": "from sklearn.ensemble import RandomForestRegressor\\nimport pandas as pd\\ndf = df_sales.copy()\\ndf = pd.get_dummies(df)\\nmodel = RandomForestRegressor()\\nmodel.fit(df.drop('sales', axis=1), df['sales'])\\nprediction = model.predict(df.drop('sales', axis=1).iloc[[0]])[0]\\nresult = float(prediction)",
-  "chat_message": "The predicted sales volume is RESULT_VALUE.",
-  "artifact": null,
-  "insight": "The Random Forest model predicts strong sales next month. Factors like recent marketing spend are the heaviest contributors to this baseline."
-}}
-
 ── CHART ──
 Query: "Show revenue by region as a bar chart"
 {{
@@ -194,7 +184,7 @@ Query: "Show revenue by region as a bar chart"
   "chat_message": "Here is a bar chart showing revenue broken down by region.",
   "artifact": {{
     "type": "html",
-    "content": "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><title>Revenue by Region</title><link href='https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap' rel='stylesheet'><script src='https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js'></script><style>*{{box-sizing:border-box;margin:0;padding:0}}body{{background:#0a0b0f;color:#f0f2f8;font-family:'DM Sans',sans-serif;padding:24px}}.card{{background:#111318;border-radius:12px;padding:24px;box-shadow:0 4px 24px rgba(0,0,0,.4)}}.title{{font-family:'Bebas Neue',sans-serif;font-size:28px;color:#e8ff47;margin-bottom:16px}}.chart-wrap{{position:relative;height:380px}}</style></head><body><div class='card'><div class='title'>Revenue by Region</div><div class='chart-wrap'><canvas id='c'></canvas></div></div><script>const d=[{{r:'North',v:980000}},{{r:'South',v:720000}},{{r:'East',v:540000}},{{r:'West',v:430000}}];new Chart(document.getElementById('c'),{{type:'bar',data:{{labels:d.map(x=>x.r),datasets:[{{data:d.map(x=>x.v),backgroundColor:'#e8ff47',borderRadius:6,hoverBackgroundColor:'#f5ff8a'}}]}},options:{{responsive:true,maintainAspectRatio:false,plugins:{{legend:{{display:false}},tooltip:{{callbacks:{{label:(c)=>'$'+c.parsed.y.toLocaleString()}}}}}},scales:{{y:{{grid:{{color:'#1f2937'}},ticks:{{color:'#7a8099',callback:(v)=>'$'+v.toLocaleString()}}}},x:{{grid:{{display:false}},ticks:{{color:'#7a8099'}}}}}}}}}})</script></body></html>"
+    "content": "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><title>Revenue by Region</title><link href='https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap' rel='stylesheet'><script src='https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js'></script><style>*{{box-sizing:border-box;margin:0;padding:0}}body{{background:#0a0b0f;color:#f0f2f8;font-family:'DM Sans',sans-serif;padding:24px}}.card{{background:#111318;border-radius:12px;padding:24px;box-shadow:0 4px 24px rgba(0,0,0,.4)}}.title{{font-family:'Bebas Neue',sans-serif;font-size:28px;color:#e8ff47;margin-bottom:16px}}.chart-wrap{{position:relative;height:380px}}</style></head><body><div class='card'><div class='title'>Revenue by Region</div><div class='chart-wrap'><canvas id='c'></canvas></div></div><script>const d=RESULT_DATA;new Chart(document.getElementById('c'),{{type:'bar',data:{{labels:d.map(x=>x.region),datasets:[{{data:d.map(x=>x.revenue),backgroundColor:'#e8ff47',borderRadius:6,hoverBackgroundColor:'#f5ff8a'}}]}},options:{{responsive:true,maintainAspectRatio:false,plugins:{{legend:{{display:false}},tooltip:{{callbacks:{{label:(c)=>'$'+c.parsed.y.toLocaleString()}}}}}},scales:{{y:{{grid:{{color:'#1f2937'}},ticks:{{color:'#7a8099',callback:(v)=>'$'+v.toLocaleString()}}}},x:{{grid:{{display:false}},ticks:{{color:'#7a8099'}}}}}}}}}})</script></body></html>"
   }},
   "insight": "North region leads revenue generation, contributing the largest share. Replicating North's strategies — particularly product mix and pricing — in underperforming regions could unlock significant growth."
 }}
@@ -208,7 +198,7 @@ Query: "Give me a summary dashboard"
   "chat_message": "I've built a summary dashboard with key KPIs and a revenue breakdown by category.",
   "artifact": {{
     "type": "html",
-    "content": "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><title>Dashboard</title><link href='https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap' rel='stylesheet'><script src='https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js'></script><style>*{{box-sizing:border-box;margin:0;padding:0}}body{{background:#0a0b0f;color:#f0f2f8;font-family:'DM Sans',sans-serif;padding:24px;display:flex;flex-direction:column;gap:20px}}.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}}.kpi{{background:#111318;border-radius:12px;padding:20px;box-shadow:0 4px 24px rgba(0,0,0,.4)}}.kpi-label{{font-size:12px;color:#7a8099;text-transform:uppercase;letter-spacing:.05em}}.kpi-value{{font-family:'DM Mono',monospace;font-size:28px;color:#e8ff47;margin-top:6px}}.card{{background:#111318;border-radius:12px;padding:24px;box-shadow:0 4px 24px rgba(0,0,0,.4)}}.title{{font-family:'Bebas Neue',sans-serif;font-size:24px;color:#e8ff47;margin-bottom:16px}}.chart-wrap{{position:relative;height:320px}}</style></head><body><div class='grid'><div class='kpi'><div class='kpi-label'>Total Revenue</div><div class='kpi-value'>$2.45M</div></div><div class='kpi'><div class='kpi-label'>Total Orders</div><div class='kpi-value'>12,430</div></div><div class='kpi'><div class='kpi-label'>Avg Order Value</div><div class='kpi-value'>$197</div></div><div class='kpi'><div class='kpi-label'>Unique Customers</div><div class='kpi-value'>3,280</div></div></div><div class='card'><div class='title'>Revenue by Category</div><div class='chart-wrap'><canvas id='c'></canvas></div></div><script>const d=[{{l:'Electronics',v:820000}},{{l:'Clothing',v:540000}},{{l:'Food',v:430000}},{{l:'Home',v:380000}},{{l:'Sports',v:280000}}];new Chart(document.getElementById('c'),{{type:'bar',data:{{labels:d.map(x=>x.l),datasets:[{{data:d.map(x=>x.v),backgroundColor:'#e8ff47',borderRadius:6,hoverBackgroundColor:'#f5ff8a'}}]}},options:{{responsive:true,maintainAspectRatio:false,plugins:{{legend:{{display:false}}}},scales:{{y:{{grid:{{color:'#1f2937'}},ticks:{{color:'#7a8099',callback:(v)=>'$'+v.toLocaleString()}}}},x:{{grid:{{display:false}},ticks:{{color:'#7a8099'}}}}}}}}}})</script></body></html>"
+    "content": "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><title>Dashboard</title><link href='https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap' rel='stylesheet'><script src='https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js'></script><style>*{{box-sizing:border-box;margin:0;padding:0}}body{{background:#0a0b0f;color:#f0f2f8;font-family:'DM Sans',sans-serif;padding:24px;display:flex;flex-direction:column;gap:20px}}.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}}.kpi{{background:#111318;border-radius:12px;padding:20px;box-shadow:0 4px 24px rgba(0,0,0,.4)}}.kpi-label{{font-size:12px;color:#7a8099;text-transform:uppercase;letter-spacing:.05em}}.kpi-value{{font-family:'DM Mono',monospace;font-size:28px;color:#e8ff47;margin-top:6px}}.card{{background:#111318;border-radius:12px;padding:24px;box-shadow:0 4px 24px rgba(0,0,0,.4)}}.title{{font-family:'Bebas Neue',sans-serif;font-size:24px;color:#e8ff47;margin-bottom:16px}}.chart-wrap{{position:relative;height:320px}}</style></head><body><div class='grid'><div class='kpi'><div class='kpi-label'>Total Revenue</div><div id='k_rev' class='kpi-value'>-</div></div><div class='kpi'><div class='kpi-label'>Total Orders</div><div id='k_ord' class='kpi-value'>-</div></div><div class='kpi'><div class='kpi-label'>Avg Order Value</div><div id='k_aov' class='kpi-value'>-</div></div><div class='kpi'><div class='kpi-label'>Unique Customers</div><div id='k_cus' class='kpi-value'>-</div></div></div><div class='card'><div class='title'>Revenue by Category</div><div class='chart-wrap'><canvas id='c'></canvas></div></div><script>const result=RESULT_DATA;document.getElementById('k_rev').innerText='$'+(result.metrics.total_revenue/1000000).toFixed(2)+'M';document.getElementById('k_ord').innerText=result.metrics.total_orders.toLocaleString();document.getElementById('k_aov').innerText='$'+result.metrics.avg_order_value;document.getElementById('k_cus').innerText=result.metrics.unique_customers.toLocaleString();const d=result.rev_by_cat;new Chart(document.getElementById('c'),{{type:'bar',data:{{labels:d.map(x=>x.category),datasets:[{{data:d.map(x=>x.revenue),backgroundColor:'#e8ff47',borderRadius:6,hoverBackgroundColor:'#f5ff8a'}}]}},options:{{responsive:true,maintainAspectRatio:false,plugins:{{legend:{{display:false}}}},scales:{{y:{{grid:{{color:'#1f2937'}},ticks:{{color:'#7a8099',callback:(v)=>'$'+v.toLocaleString()}}}},x:{{grid:{{display:false}},ticks:{{color:'#7a8099'}}}}}}}}}})</script></body></html>"
   }},
   "insight": "Revenue is concentrated in top categories, suggesting strong category leadership. Expanding mid-tier categories with targeted promotions could diversify revenue risk and improve overall margins."
 }}"""

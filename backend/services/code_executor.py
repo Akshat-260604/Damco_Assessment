@@ -13,7 +13,7 @@ from config import CODE_EXECUTION_TIMEOUT, MAX_RESULT_ROWS
 logger = logging.getLogger(__name__)
 
 # Whitelisted top-level imports
-ALLOWED_IMPORTS = {"pandas", "numpy", "datetime", "json", "math", "re", "collections", "sklearn"}
+ALLOWED_IMPORTS = {"pandas", "numpy", "datetime", "json", "math", "re", "collections"}
 
 # Blacklisted names / builtins
 BLACKLISTED_NAMES = {
@@ -54,7 +54,6 @@ def _validate_ast(code: str) -> None:
             if node.id in BLACKLISTED_NAMES:
                 raise SecurityError(f"Forbidden reference: {node.id}")
 
-        # Block attribute access that starts with dunder
         elif isinstance(node, ast.Attribute):
             if node.attr.startswith("__") and node.attr.endswith("__"):
                 raise SecurityError(f"Dunder attribute access not allowed: {node.attr}")
@@ -87,7 +86,10 @@ def _execute_in_subprocess(
             namespace[name] = df
 
         # Execute code
-        exec(code, {"pd": pd, "np": np, "json": json, **namespace})  # noqa: S102
+        namespace["pd"] = pd
+        namespace["np"] = np
+        namespace["json"] = json
+        exec(code, namespace)  # noqa: S102
 
         result = namespace.get("result")
 
