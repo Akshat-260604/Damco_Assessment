@@ -1,0 +1,80 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=DM+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Light theme (default on :root, no .dark class) ─────────────────────── */
+:root {
+  --color-bg:      #f5f6fa;
+  --color-surface: #ffffff;
+  --color-accent:  #5b6af0;
+  --color-text:    #0f1117;
+  --color-muted:   #6b7280;
+  --color-border:  #e5e7eb;
+}
+
+/* ── Dark theme (.dark on <html>) ──────────────────────────────────────── */
+.dark {
+  --color-bg:      #0a0b0f;
+  --color-surface: #111318;
+  --color-accent:  #e8ff47;
+  --color-text:    #f0f2f8;
+  --color-muted:   #7a8099;
+  --color-border:  #1f2937;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-bg text-text font-sans;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-bg;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-accent text-bg font-medium px-4 py-2 rounded-lg
+           hover:bg-opacity-90 transition-all duration-200
+           disabled:opacity-40 disabled:cursor-not-allowed
+           focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg;
+  }
+
+  .btn-ghost {
+    @apply text-muted hover:text-text hover:bg-surface px-3 py-1.5 rounded-lg
+           transition-all duration-200 text-sm
+           focus:outline-none focus:ring-2 focus:ring-border focus:ring-offset-1 focus:ring-offset-bg;
+  }
+
+  .card {
+    @apply bg-surface rounded-xl border border-border;
+  }
+
+  .input-base {
+    @apply bg-surface border border-border rounded-lg px-4 py-2.5
+           text-text placeholder-muted
+           focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent
+           transition-all duration-200;
+  }
+}
