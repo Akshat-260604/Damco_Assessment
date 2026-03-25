@@ -5,18 +5,41 @@ AI-assisted BI: upload CSV/XLSX, profile data, chat/ask for metrics or charts, g
 ## Architecture (high-level)
 ```mermaid
 flowchart TD
-    A[Client (Next.js)] -->|upload / query| B[FastAPI main.py]
-    B -->|/api/upload| P[parser.py<br/>clean & dtype infer]
-    B -->|/api/upload| S[schema_analyzer.py<br/>stats + starter Qs]
-    B -->|/api/upload| SS[session_store.py<br/>cache DFs]
-    B -->|/api/query| C[claude_service.py<br/>Bedrock prompt]
-    C --> E[code_executor.py<br/>AST guard + sandbox]
-    E --> C
-    C --> B
-    B -->|response| A
-    subgraph Storage
-        SS
+    subgraph Client["Client"]
+        A["User\nUploads file · sends query"]
     end
+
+    subgraph Backend["Backend API"]
+        B["Validate request\nAuth · size · format checks"]
+        P["Parse & clean data\nNormalize · type-cast · dedupe"]
+        S["Profile schema\nInfer types · generate questions"]
+        N["Detect anomalies\nOutliers · nulls · type conflicts"]
+        C["Cache session\nData · schema · anomalies"]
+        L["LLM plans aggregation\nQuery → pandas plan"]
+        X["Sandbox executes pandas\nIsolated · safe · reproducible"]
+        R["Build response\nChat reply · artifact · chart"]
+    end
+
+    A -->|upload| B
+    B --> P --> S --> N --> C
+    C -->|session_id + schema + questions| A
+    A -->|query + session_id| L
+    L -->|pandas plan| X
+    X -->|result| L
+    L --> R
+    R -->|response| A
+    C -.->|dataframes| X
+    C -.->|schema + anomalies| L
+
+    style A fill:#7F77DD,stroke:#534AB7,color:#EEEDFE
+    style B fill:#1D9E75,stroke:#0F6E56,color:#E1F5EE
+    style P fill:#1D9E75,stroke:#0F6E56,color:#E1F5EE
+    style S fill:#1D9E75,stroke:#0F6E56,color:#E1F5EE
+    style N fill:#BA7517,stroke:#854F0B,color:#FAEEDA
+    style C fill:#D85A30,stroke:#993C1D,color:#FAECE7
+    style L fill:#378ADD,stroke:#185FA5,color:#E6F1FB
+    style X fill:#378ADD,stroke:#185FA5,color:#E6F1FB
+    style R fill:#7F77DD,stroke:#534AB7,color:#EEEDFE
 ```
 
 ## Request lifecycles
