@@ -6,11 +6,11 @@ AI-assisted BI: upload CSV/XLSX, profile data, chat/ask for metrics or charts, g
 ```mermaid
 flowchart TD
     A[Client (Next.js)] -->|upload / query| B[FastAPI main.py]
-    B -->|/api/upload| P[parser.py\nclean & dtype infer]
-    B -->|/api/upload| S[schema_analyzer.py\nstats + starter Qs]
-    B -->|/api/upload| SS[session_store.py\ncache DFs]
-    B -->|/api/query| C[claude_service.py\nBedrock prompt]
-    C --> E[code_executor.py\nAST guard + sandbox]
+    B -->|/api/upload| P[parser.py<br/>clean & dtype infer]
+    B -->|/api/upload| S[schema_analyzer.py<br/>stats + starter Qs]
+    B -->|/api/upload| SS[session_store.py<br/>cache DFs]
+    B -->|/api/query| C[claude_service.py<br/>Bedrock prompt]
+    C --> E[code_executor.py<br/>AST guard + sandbox]
     E --> C
     C --> B
     B -->|response| A
