@@ -23,7 +23,6 @@ export default function SharePage() {
         if (!shareId) return
         getShare(shareId)
             .then((data) => {
-                // Convert conversation history pairs to messages
                 const msgs: SharedMessage[] = data.messages.map((m) => ({
                     role: m.role as 'user' | 'assistant',
                     content: m.content,

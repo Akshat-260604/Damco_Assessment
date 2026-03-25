@@ -12,10 +12,8 @@ from config import CODE_EXECUTION_TIMEOUT, MAX_RESULT_ROWS
 
 logger = logging.getLogger(__name__)
 
-# Whitelisted top-level imports
 ALLOWED_IMPORTS = {"pandas", "numpy", "datetime", "json", "math", "re", "collections"}
 
-# Blacklisted names / builtins
 BLACKLISTED_NAMES = {
     "os", "sys", "subprocess", "eval", "exec", "open", "__import__",
     "compile", "globals", "locals", "vars", "dir", "getattr", "setattr",
@@ -29,14 +27,12 @@ class SecurityError(Exception):
 
 
 def _validate_ast(code: str) -> None:
-    """Parse and walk AST to enforce security rules."""
     try:
         tree = ast.parse(code)
     except SyntaxError as e:
         raise SyntaxError(f"Syntax error in generated code: {e}")
 
     for node in ast.walk(tree):
-        # Block dangerous imports
         if isinstance(node, ast.Import):
             for alias in node.names:
                 top_module = alias.name.split(".")[0]
@@ -49,7 +45,6 @@ def _validate_ast(code: str) -> None:
                 if top_module not in ALLOWED_IMPORTS:
                     raise SecurityError(f"Import not allowed: {node.module}")
 
-        # Block dangerous name references
         elif isinstance(node, ast.Name):
             if node.id in BLACKLISTED_NAMES:
                 raise SecurityError(f"Forbidden reference: {node.id}")
@@ -64,7 +59,6 @@ def _execute_in_subprocess(
     dataframes_serialized: dict[str, str],
     result_queue: multiprocessing.Queue,
 ) -> None:
-    """Worker function that runs inside a subprocess."""
     import os
     os.environ["OMP_NUM_THREADS"] = "1"
     os.environ["OPENBLAS_NUM_THREADS"] = "1"
@@ -79,21 +73,18 @@ def _execute_in_subprocess(
         import pandas as pd
         import numpy as np
 
-        # Reconstruct DataFrames
         namespace: dict[str, Any] = {}
         for name, json_str in dataframes_serialized.items():
             df = pd.read_json(io.StringIO(json_str), orient="records")
             namespace[name] = df
 
-        # Execute code
         namespace["pd"] = pd
         namespace["np"] = np
         namespace["json"] = json
-        exec(code, namespace)  # noqa: S102
+        exec(code, namespace)
 
         result = namespace.get("result")
 
-        # Serialize result
         if isinstance(result, pd.DataFrame):
             if len(result) > 10000:
                 truncated = True
@@ -127,11 +118,6 @@ def _execute_in_subprocess(
 
 
 def execute_pandas_code(code: str, dataframes: dict[str, pd.DataFrame]) -> dict[str, Any]:
-    """
-    Validate and execute pandas code in a sandboxed subprocess.
-    Returns a result dict with type and data.
-    """
-    # Step 1: AST security validation
     try:
         _validate_ast(code)
     except SecurityError as e:
@@ -140,7 +126,6 @@ def execute_pandas_code(code: str, dataframes: dict[str, pd.DataFrame]) -> dict[
     except SyntaxError as e:
         return {"type": "error", "error": str(e)}
 
-    # Step 2: Serialize DataFrames for subprocess
     dataframes_serialized: dict[str, str] = {}
     for name, df in dataframes.items():
         try:
@@ -150,7 +135,6 @@ def execute_pandas_code(code: str, dataframes: dict[str, pd.DataFrame]) -> dict[
         except Exception as e:
             return {"type": "error", "error": f"Failed to serialize DataFrame '{name}': {e}"}
 
-    # Step 3: Run in subprocess with timeout
     result_queue: multiprocessing.Queue = multiprocessing.Queue()
     proc = multiprocessing.Process(
         target=_execute_in_subprocess,

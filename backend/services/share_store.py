@@ -1,7 +1,3 @@
-"""
-Share store — in-memory store for shareable session snapshots.
-Snapshots persist for 7 days (604800 seconds).
-"""
 import time
 import uuid
 import threading
@@ -10,15 +6,15 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-SHARE_TTL = 604800  # 7 days in seconds
+SHARE_TTL = 604800
 
 
 class ShareSnapshot:
     def __init__(self, share_id: str, messages: list, schema: dict, files: list[str]):
         self.share_id = share_id
-        self.messages = messages          # list of {role, content, timestamp}
-        self.schema = schema              # original schema summary
-        self.files = files                # original filenames
+        self.messages = messages
+        self.schema = schema
+        self.files = files
         self.created_at = time.time()
 
     def is_expired(self) -> bool:
@@ -39,7 +35,7 @@ class ShareStore:
         return cls._instance
 
     def create_share(self, messages: list, schema: dict, files: list[str]) -> str:
-        share_id = str(uuid.uuid4())[:8]  # short ID for cleaner URLs
+        share_id = str(uuid.uuid4())[:8]
         with self._shares_lock:
             self._shares[share_id] = ShareSnapshot(share_id, messages, schema, files)
         logger.info(f"Created share: {share_id}")

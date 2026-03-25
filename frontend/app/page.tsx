@@ -158,7 +158,6 @@ export default function Home() {
     }
   }
 
-  // The empty state without fixed top margins, ready to be flex-centered
   const emptyStateNode = (
     <div className="flex flex-col items-center justify-center animate-fade-in mb-8">
       <div className="w-16 h-16 bg-surface border border-border rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-accent/5">
@@ -179,7 +178,6 @@ export default function Home() {
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Theme toggle */}
           <button
             onClick={toggleTheme}
             className="btn-ghost p-2 relative"
@@ -189,7 +187,6 @@ export default function Home() {
             <span className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${
               theme === 'dark' ? 'opacity-100 rotate-0' : 'opacity-0 rotate-90'
             }`}>
-              {/* Moon icon */}
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
               </svg>
@@ -197,7 +194,6 @@ export default function Home() {
             <span className={`flex items-center justify-center transition-all duration-300 ${
               theme === 'light' ? 'opacity-100 rotate-0' : 'opacity-0 -rotate-90'
             }`}>
-              {/* Sun icon */}
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="5" />
                 <line x1="12" y1="1" x2="12" y2="3" />
@@ -212,7 +208,6 @@ export default function Home() {
             </span>
           </button>
 
-          {/* Download PDF */}
           {messages.length > 0 && (
             <button
               onClick={handleDownloadPDF}
@@ -273,7 +268,6 @@ export default function Home() {
       )}
 
       <main className="flex flex-1 overflow-hidden">
-        {/* Chat Side */}
         <div
           id="chat-panel-root"
           className={[
@@ -281,7 +275,6 @@ export default function Home() {
             artifactOpen ? 'w-full md:w-1/2 border-r border-border' : 'w-full',
           ].join(' ')}>
 
-          {/* Schema Summary Pill */}
           {schema && (
             <div className="px-4 py-2 border-b border-border bg-surface/30 shrink-0 flex justify-center z-10">
               <div className="flex flex-wrap gap-x-4 gap-y-1 justify-center max-w-3xl w-full">
@@ -309,7 +302,6 @@ export default function Home() {
           />
         </div>
 
-        {/* Artifact Side */}
         {artifactOpen && (
           <ArtifactPanel ref={artifactPanelRef} />
         )}

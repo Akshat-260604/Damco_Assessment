@@ -1,6 +1,3 @@
-"""
-Share router — POST /api/share and GET /api/share/{share_id}
-"""
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Any
@@ -29,7 +26,6 @@ class ShareData(BaseModel):
 
 @router.post("", response_model=ShareResponse)
 async def create_share(request: ShareRequest):
-    """Snapshot the current session into a shareable report."""
     session = session_store.get_session(request.session_id)
     if session is None:
         raise HTTPException(
@@ -53,7 +49,6 @@ async def create_share(request: ShareRequest):
 
 @router.get("/{share_id}", response_model=ShareData)
 async def get_share(share_id: str):
-    """Retrieve a shared report snapshot."""
     snapshot = share_store.get_share(share_id)
     if snapshot is None:
         raise HTTPException(

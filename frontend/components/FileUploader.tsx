@@ -8,7 +8,7 @@ interface Props {
   onSuccess: (response: UploadResponse) => void
 }
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024 // 100MB
+const MAX_FILE_SIZE = 100 * 1024 * 1024
 const ALLOWED_EXTENSIONS = ['.csv', '.xlsx']
 
 export default function FileUploader({ onSuccess }: Props) {
@@ -80,7 +80,6 @@ export default function FileUploader({ onSuccess }: Props) {
 
   return (
     <div className="w-full max-w-xl mx-auto flex flex-col gap-4">
-      {/* Drop zone */}
       <div
         role="button"
         tabIndex={0}
@@ -118,7 +117,6 @@ export default function FileUploader({ onSuccess }: Props) {
         />
       </div>
 
-      {/* Selected files */}
       {selectedFiles.length > 0 && (
         <ul className="card divide-y divide-border overflow-hidden">
           {selectedFiles.map((file, i) => (
@@ -140,7 +138,6 @@ export default function FileUploader({ onSuccess }: Props) {
         </ul>
       )}
 
-      {/* Error message */}
       {error && (
         <div
           role="alert"
@@ -151,7 +148,6 @@ export default function FileUploader({ onSuccess }: Props) {
         </div>
       )}
 
-      {/* Upload button */}
       {selectedFiles.length > 0 && (
         <button
           onClick={handleUpload}

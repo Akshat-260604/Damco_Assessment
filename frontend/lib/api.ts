@@ -2,8 +2,6 @@ import type { QueryResponse, UploadResponse } from '@/types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:8000'
 
-// ── Upload ─────────────────────────────────────────────────────────────────
-
 export async function uploadFiles(files: File[]): Promise<UploadResponse> {
   const formData = new FormData()
   files.forEach((file) => formData.append('files', file))
@@ -20,8 +18,6 @@ export async function uploadFiles(files: File[]): Promise<UploadResponse> {
 
   return response.json()
 }
-
-// ── Query ──────────────────────────────────────────────────────────────────
 
 export async function sendQuery(
   sessionId: string,
@@ -43,8 +39,6 @@ export async function sendQuery(
 
   return response.json()
 }
-
-// ── Share ──────────────────────────────────────────────────────────────────
 
 export async function createShare(sessionId: string): Promise<{ share_id: string }> {
   const response = await fetch(`${API_BASE}/api/share`, {
@@ -77,8 +71,6 @@ export async function getShare(shareId: string): Promise<{
 
   return response.json()
 }
-
-// ── Errors ─────────────────────────────────────────────────────────────────
 
 export class SessionExpiredError extends Error {
   constructor(message: string) {

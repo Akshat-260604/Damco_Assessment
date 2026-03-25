@@ -56,7 +56,6 @@ export default function ChatPanel({
     }
     startListening((transcript) => {
       setInput(transcript)
-      // Auto-submit after a short delay so UI shows what was said
       setTimeout(() => {
         onSendMessage(transcript)
         setInput('')
@@ -84,7 +83,6 @@ export default function ChatPanel({
   return (
     <div className="flex flex-col h-full relative w-full">
 
-      {/* Scrollable Message Area - Takes full width so messages align left/right */}
       {!isInitialState && (
         <div className="flex-1 w-full overflow-y-auto px-4 md:px-8 py-6 md:py-8 flex flex-col items-center">
           <div className="w-full max-w-7xl flex flex-col gap-6">
@@ -106,17 +104,14 @@ export default function ChatPanel({
         </div>
       )}
 
-      {/* Input Area & Empty State - Centered vertically if empty, pinned to bottom if not */}
       <div className={`w-full px-4 flex flex-col items-center transition-all duration-300 ${isInitialState
         ? 'flex-1 justify-center pb-12'
         : 'shrink-0 pb-6 md:pb-8 bg-gradient-to-t from-bg via-bg to-transparent pt-4'
         }`}>
         <div className="w-full max-w-3xl">
 
-          {/* Central Welcome State */}
           {isInitialState && emptyStateNode}
 
-          {/* Suggested Questions */}
           {isInitialState && sessionId && suggestedQuestions.length > 0 && (
             <div className="mb-6 flex flex-wrap gap-2 justify-center animate-fade-in">
               {suggestedQuestions.map((q, i) => (
@@ -134,12 +129,10 @@ export default function ChatPanel({
             </div>
           )}
 
-          {/* Master Chat Input Box (Removed focus-within glow) */}
           <form
             onSubmit={handleSubmit}
             className="relative flex flex-col bg-surface border border-border rounded-2xl p-3 transition-colors duration-200 shadow-lg shadow-black/20"
           >
-            {/* Uploaded File Chips */}
             {(uploadedFiles.length > 0 || isUploadingFiles) && (
               <div className="flex flex-wrap gap-2 mb-2 px-1">
                 {uploadedFiles.map((file, i) => (
@@ -158,7 +151,6 @@ export default function ChatPanel({
             )}
 
             <div className="flex items-end gap-2">
-              {/* Hidden File Input */}
               <input
                 type="file"
                 ref={fileInputRef}
@@ -173,7 +165,6 @@ export default function ChatPanel({
                 }}
               />
 
-              {/* Attachment Button */}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -187,7 +178,6 @@ export default function ChatPanel({
                 </svg>
               </button>
 
-              {/* Text Area (Added focus:outline-none) */}
               <textarea
                 ref={textareaRef}
                 rows={1}
@@ -201,7 +191,6 @@ export default function ChatPanel({
                 aria-label="Query input"
               />
 
-              {/* Mic button */}
               {supported && (
                 <button
                   type="button"
@@ -215,7 +204,6 @@ export default function ChatPanel({
                       : 'text-muted hover:text-text hover:bg-bg'
                     } disabled:opacity-50`}
                 >
-                  {/* Pulse ring when listening */}
                   {isListening && (
                     <span className="absolute inset-0 rounded-xl animate-ping bg-red-500/30 pointer-events-none" />
                   )}
@@ -249,7 +237,6 @@ export default function ChatPanel({
             </div>
           </form>
 
-          {/* Stop-speaking banner */}
           {isSpeaking && (
             <div className="flex items-center justify-center gap-2 mt-2 animate-fade-in">
               <span className="flex gap-0.5 items-end h-4">

@@ -1,7 +1,3 @@
-"""
-Anomaly detection service.
-Uses IQR method to detect outliers in numeric columns.
-"""
 import logging
 from typing import Any
 import pandas as pd
@@ -11,10 +7,6 @@ logger = logging.getLogger(__name__)
 
 
 def detect_anomalies(dataframes: dict[str, pd.DataFrame]) -> dict[str, dict[str, Any]]:
-    """
-    Scan each numeric column in every DataFrame for outliers using IQR.
-    Returns a dict: { df_name -> { col_name -> { count, pct, severity } } }
-    """
     result: dict[str, dict[str, Any]] = {}
 
     for df_name, df in dataframes.items():
@@ -24,14 +16,14 @@ def detect_anomalies(dataframes: dict[str, pd.DataFrame]) -> dict[str, dict[str,
         for col in numeric_cols:
             series = df[col].dropna()
             if len(series) < 10:
-                continue  # too small to be meaningful
+                continue
 
             q1 = series.quantile(0.25)
             q3 = series.quantile(0.75)
             iqr = q3 - q1
 
             if iqr == 0:
-                continue  # constant column
+                continue
 
             lower = q1 - 1.5 * iqr
             upper = q3 + 1.5 * iqr

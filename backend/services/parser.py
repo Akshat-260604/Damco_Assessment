@@ -6,7 +6,6 @@ from fastapi import HTTPException
 
 
 def _sanitize_column_name(name: str) -> str:
-    """Lowercase, strip whitespace, replace special chars with underscore."""
     name = str(name).strip().lower()
     name = re.sub(r"[^a-z0-9_]", "_", name)
     name = re.sub(r"_+", "_", name)
@@ -15,17 +14,14 @@ def _sanitize_column_name(name: str) -> str:
 
 
 def _infer_dtypes(df: pd.DataFrame) -> pd.DataFrame:
-    """Attempt to convert columns to more specific dtypes."""
     for col in df.columns:
         if df[col].dtype == object:
-            # Try datetime
             try:
                 converted = pd.to_datetime(df[col], format='mixed', dayfirst=False)
                 df[col] = converted
                 continue
             except Exception:
                 pass
-            # Try numeric
             try:
                 converted = pd.to_numeric(df[col])
                 df[col] = converted
@@ -36,7 +32,6 @@ def _infer_dtypes(df: pd.DataFrame) -> pd.DataFrame:
 
 
 async def parse_file(file_bytes: bytes, filename: str) -> pd.DataFrame:
-    """Parse CSV or XLSX bytes into a cleaned DataFrame."""
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
 
     if ext == "xlsx":
@@ -46,10 +41,8 @@ async def parse_file(file_bytes: bytes, filename: str) -> pd.DataFrame:
     else:
         raise HTTPException(status_code=422, detail=f"Unsupported file type: .{ext}")
 
-    # Sanitize column names
     df.columns = [_sanitize_column_name(c) for c in df.columns]
 
-    # Handle duplicate column names
     seen: dict[str, int] = {}
     new_cols = []
     for col in df.columns:
@@ -61,10 +54,8 @@ async def parse_file(file_bytes: bytes, filename: str) -> pd.DataFrame:
             new_cols.append(col)
     df.columns = new_cols
 
-    # Infer better dtypes
     df = _infer_dtypes(df)
 
-    # Validate
     if df.empty or len(df.columns) == 0:
         raise HTTPException(status_code=422, detail="File contains no data")
     if len(df) == 0:
@@ -74,12 +65,9 @@ async def parse_file(file_bytes: bytes, filename: str) -> pd.DataFrame:
 
 
 def _parse_csv(file_bytes: bytes) -> pd.DataFrame:
-    """Parse CSV with encoding detection and delimiter sniffing."""
-    # Detect encoding
     detected = chardet.detect(file_bytes)
     encoding = detected.get("encoding") or "utf-8"
 
-    # Fallback encodings
     encodings_to_try = [encoding, "utf-8", "latin-1", "cp1252"]
     seen_encodings: set[str] = set()
     unique_encodings = []
@@ -108,7 +96,6 @@ def _parse_csv(file_bytes: bytes) -> pd.DataFrame:
 
 
 def _parse_xlsx(file_bytes: bytes) -> pd.DataFrame:
-    """Parse XLSX using openpyxl engine."""
     try:
         df = pd.read_excel(io.BytesIO(file_bytes), engine="openpyxl")
         return df

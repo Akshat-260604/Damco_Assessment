@@ -21,7 +21,6 @@ export function useTheme() {
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('dark')
 
-  // Read persisted preference on mount (client only)
   useEffect(() => {
     const saved = localStorage.getItem('bi-theme') as Theme | null
     if (saved === 'light' || saved === 'dark') {
@@ -29,7 +28,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  // Apply/remove 'dark' class on <html> whenever theme changes
   useEffect(() => {
     const root = document.documentElement
     if (theme === 'dark') {

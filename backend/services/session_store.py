@@ -17,7 +17,7 @@ class SessionData:
         self.last_accessed: float = time.time()
         self.dataframes: dict[str, pd.DataFrame] = {}
         self.schema: dict = {}
-        self.anomalies: dict = {}   # df_name -> { col -> { count, pct, severity } }
+        self.anomalies: dict = {}
         self.conversation_history: list[dict] = []
 
     def is_expired(self) -> bool:
@@ -96,7 +96,6 @@ class SessionStore:
             return True
 
     def cleanup_expired_sessions(self) -> int:
-        """Remove all expired sessions. Returns count of removed sessions."""
         expired_ids = []
         with self._sessions_lock:
             for session_id, session in list(self._sessions.items()):
@@ -113,5 +112,4 @@ class SessionStore:
             return len(self._sessions)
 
 
-# Singleton instance
 session_store = SessionStore()

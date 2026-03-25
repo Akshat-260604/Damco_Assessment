@@ -25,7 +25,7 @@ class UploadResponse(BaseModel):
     files_processed: list[str]
     schema_summary: dict[str, Any]
     suggested_questions: list[str]
-    anomaly_summary: dict[str, Any] = {}   # df_name -> { col -> { count, pct, severity } }
+    anomaly_summary: dict[str, Any] = {}
 
 
 class QueryRequest(BaseModel):

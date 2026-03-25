@@ -11,10 +11,6 @@ from config import AWS_ACCESS_KEY_ID, AWS_REGION, AWS_SECRET_ACCESS_KEY, AWS_SES
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# Bedrock client
-# ---------------------------------------------------------------------------
-
 def _get_bedrock_client():
     kwargs: dict[str, Any] = {"service_name": "bedrock-runtime", "region_name": AWS_REGION}
     if AWS_ACCESS_KEY_ID:
@@ -202,12 +198,6 @@ Query: "Give me a summary dashboard"
   }},
   "insight": "Revenue is concentrated in top categories, suggesting strong category leadership. Expanding mid-tier categories with targeted promotions could diversify revenue risk and improve overall margins."
 }}"""
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
 def _build_system_prompt(schema: dict, dataframe_names: list[str]) -> str:
     schema_str = json.dumps(schema, indent=2, default=str)
     df_names_str = ", ".join(dataframe_names) if dataframe_names else "none"
@@ -229,13 +219,11 @@ def _build_messages(conversation_history: list[dict], query: str) -> list[dict]:
 def _parse_response(raw: str) -> dict[str, Any]:
     raw = raw.strip()
 
-    # Strip markdown fences
     if raw.startswith("```"):
         lines = raw.split("\n")
         inner = lines[1:-1] if lines[-1].strip().startswith("```") else lines[1:]
         raw = "\n".join(inner).strip()
 
-    # Extract the JSON object — find the outermost { ... }
     start = raw.find("{")
     end = raw.rfind("}")
     if start != -1 and end != -1 and end > start:
@@ -245,16 +233,8 @@ def _parse_response(raw: str) -> dict[str, Any]:
         data = json.loads(raw)
     except json.JSONDecodeError as e:
         logger.warning(f"JSON parse failed ({e}). Raw[:300]: {raw[:300]}")
-        data = {
-            "output_type": "text",
-            "render_mode": "chat",
-            "aggregation_code": None,
-            "chat_message": "I had trouble formatting my response. Please try rephrasing your question.",
-            "artifact": None,
-            "insight": "",
-        }
+        data = {"output_type": "text", "render_mode": "chat", "aggregation_code": None, "chat_message": "I had trouble formatting my response. Please try rephrasing your question.", "artifact": None, "insight": ""}
 
-    # Ensure all required fields exist
     defaults: dict[str, Any] = {
         "output_type": "text",
         "render_mode": "chat",
@@ -279,7 +259,6 @@ def _inject_result_value(chat_message: str, execution_result: Optional[dict]) ->
     value = execution_result.get("data")
 
     if result_type == "scalar" and value is not None:
-        # Format nicely: integer vs float
         if isinstance(value, float) and value == int(value):
             formatted = f"{int(value):,}"
         elif isinstance(value, float):
@@ -304,10 +283,6 @@ def _inject_result_value(chat_message: str, execution_result: Optional[dict]) ->
     return chat_message.replace("RESULT_VALUE", formatted)
 
 
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
-
 async def process_query(
     query: str,
     schema: dict,
@@ -320,7 +295,6 @@ async def process_query(
     raw = call_bedrock(messages, system_prompt)
     parsed = _parse_response(raw)
 
-    # Replace RESULT_VALUE placeholder now that we have real computed data
     if execution_result:
         parsed["chat_message"] = _inject_result_value(
             parsed.get("chat_message", ""), execution_result

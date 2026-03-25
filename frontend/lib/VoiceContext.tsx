@@ -2,8 +2,6 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 
-// ─── Browser type shims (Web Speech API is not in TypeScript's default lib) ──
-
 declare global {
     interface Window {
         SpeechRecognition: new () => ISpeechRecognition
@@ -47,8 +45,6 @@ interface ISpeechRecognition extends EventTarget {
     abort(): void
 }
 
-// ─── Context types ────────────────────────────────────────────────────────────
-
 interface VoiceContextValue {
     isListening: boolean
     isSpeaking: boolean
@@ -73,8 +69,6 @@ export function useVoice() {
     return useContext(VoiceContext)
 }
 
-// ─── Provider ─────────────────────────────────────────────────────────────────
-
 export function VoiceProvider({ children }: { children: React.ReactNode }) {
     const [isListening, setIsListening] = useState(false)
     const [isSpeaking, setIsSpeaking] = useState(false)
@@ -88,8 +82,6 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
     }, [])
 
     const recognitionRef = useRef<ISpeechRecognition | null>(null)
-
-    // ── Speech-to-Text ──────────────────────────────────────────────────────────
 
     const startListening = useCallback(
         (onResult: (text: string) => void) => {
@@ -123,14 +115,11 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
         setIsListening(false)
     }, [])
 
-    // ── Text-to-Speech ──────────────────────────────────────────────────────────
-
     const speak = useCallback(
         (text: string) => {
             if (!supported) return
             window.speechSynthesis.cancel()
 
-            // Strip markdown for cleaner audio
             const clean = text
                 .replace(/[#*_`~>]/g, '')
                 .replace(/\n+/g, '. ')

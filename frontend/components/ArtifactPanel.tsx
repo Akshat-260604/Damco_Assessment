@@ -50,7 +50,6 @@ const ArtifactPanel = forwardRef<ArtifactPanelRef>(function ArtifactPanel(_, ref
       role="region"
       aria-label="Artifact panel"
     >
-      {/* Header */}
       <div className="flex items-center justify-between px-2 sm:px-4 py-3 border-b border-border shrink-0 w-full overflow-hidden">
         <div className="flex items-center gap-2 flex-1 min-w-0 pr-2">
           <span className="text-accent text-sm shrink-0">◈</span>
@@ -63,7 +62,6 @@ const ArtifactPanel = forwardRef<ArtifactPanelRef>(function ArtifactPanel(_, ref
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
-          {/* Export PDF */}
           <button
             onClick={async () => {
               const { exportToPDF } = await import('@/lib/exportPDF');
@@ -84,7 +82,6 @@ const ArtifactPanel = forwardRef<ArtifactPanelRef>(function ArtifactPanel(_, ref
             <span className="hidden sm:inline">PDF</span>
           </button>
 
-          {/* Export HTML */}
           <button
             onClick={exportHTML}
             className="btn-ghost flex items-center gap-1.5"
@@ -99,7 +96,6 @@ const ArtifactPanel = forwardRef<ArtifactPanelRef>(function ArtifactPanel(_, ref
             <span className="hidden sm:inline">HTML</span>
           </button>
 
-          {/* Fullscreen toggle */}
           <button
             onClick={toggleFullscreen}
             className="btn-ghost"
@@ -119,7 +115,6 @@ const ArtifactPanel = forwardRef<ArtifactPanelRef>(function ArtifactPanel(_, ref
             )}
           </button>
 
-          {/* Close */}
           <button
             onClick={() => setArtifact(null)}
             className="btn-ghost"
@@ -134,7 +129,6 @@ const ArtifactPanel = forwardRef<ArtifactPanelRef>(function ArtifactPanel(_, ref
         </div>
       </div>
 
-      {/* iframe renderer */}
       <div className="flex-1 relative bg-bg overflow-hidden">
         <iframe
           ref={iframeRef}

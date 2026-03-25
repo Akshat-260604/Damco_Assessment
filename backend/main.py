@@ -25,7 +25,6 @@ logger = logging.getLogger(__name__)
 
 
 async def periodic_cleanup():
-    """Background task to clean up expired sessions every hour."""
     while True:
         await asyncio.sleep(SESSION_CLEANUP_INTERVAL)
         try:
@@ -79,11 +78,6 @@ async def health_check():
 
 @app.post("/api/upload", response_model=UploadResponse)
 async def upload_files(files: list[UploadFile] = File(...)):
-    """
-    Upload one or more CSV/XLSX files.
-    Returns a session_id, schema summary, and starter questions.
-    """
-    # Validate file count
     if len(files) > MAX_FILES_PER_UPLOAD:
         raise HTTPException(
             status_code=422,
@@ -96,7 +90,6 @@ async def upload_files(files: list[UploadFile] = File(...)):
     for upload in files:
         filename = upload.filename or "unnamed"
 
-        # Validate extension
         ext = Path(filename).suffix.lower()
         if ext not in ALLOWED_EXTENSIONS:
             raise HTTPException(
@@ -104,10 +97,8 @@ async def upload_files(files: list[UploadFile] = File(...)):
                 detail=f"Invalid file type '{ext}' for '{filename}'. Allowed: {', '.join(ALLOWED_EXTENSIONS)}",
             )
 
-        # Read file bytes
         file_bytes = await upload.read()
 
-        # Validate size
         if len(file_bytes) > MAX_FILE_SIZE:
             size_mb = len(file_bytes) / (1024 * 1024)
             raise HTTPException(
@@ -115,12 +106,9 @@ async def upload_files(files: list[UploadFile] = File(...)):
                 detail=f"File '{filename}' is too large ({size_mb:.1f}MB). Maximum is 100MB.",
             )
 
-        # Parse file
         df = await parse_file(file_bytes, filename)
 
-        # Use sanitized base name as key (e.g., "sales.csv" → "df_sales")
         base = Path(filename).stem
-        # Sanitize: lowercase, replace non-alphanumeric with underscore
         import re
         key = "df_" + re.sub(r"[^a-z0-9]", "_", base.lower()).strip("_")
 
@@ -131,21 +119,17 @@ async def upload_files(files: list[UploadFile] = File(...)):
     if not dataframes:
         raise HTTPException(status_code=422, detail="No valid files were uploaded")
 
-    # Create session
     session_id = session_store.create_session()
     session_store.add_dataframes(session_id, dataframes)
 
-    # Generate schema
     schema = {}
     for key, df in dataframes.items():
         schema[key] = analyze_dataframe(df, key)
     session_store.set_schema(session_id, schema)
 
-    # Run anomaly detection
     anomalies = detect_anomalies(dataframes)
     session_store.set_anomalies(session_id, anomalies)
 
-    # Generate starter questions
     starter_questions = generate_starter_questions(schema)
 
     logger.info(f"Session {session_id} created with {len(dataframes)} DataFrames")
@@ -161,11 +145,6 @@ async def upload_files(files: list[UploadFile] = File(...)):
 
 @app.post("/api/query", response_model=QueryResponse)
 async def query_data(request: QueryRequest):
-    """
-    Process a natural language query against the uploaded data.
-    Returns structured response with optional artifact HTML.
-    """
-    # Retrieve session
     session = session_store.get_session(request.session_id)
     if session is None:
         raise HTTPException(
@@ -185,7 +164,6 @@ async def query_data(request: QueryRequest):
     if not query:
         raise HTTPException(status_code=422, detail="Query cannot be empty.")
 
-    # ── Step 1: Ask Claude for the response structure + aggregation code ──
     try:
         claude_response = await process_query(
             query=query,
@@ -199,7 +177,6 @@ async def query_data(request: QueryRequest):
         logger.error(f"Claude service error: {e}")
         raise HTTPException(status_code=500, detail="AI service error. Please try again.")
 
-    # ── Step 2: Execute aggregation code ──
     execution_result = None
     execution_error = None
     aggregation_code = claude_response.get("aggregation_code")
@@ -212,13 +189,11 @@ async def query_data(request: QueryRequest):
         else:
             execution_result = exec_result
 
-    # ── Step 3: Inject real computed value into chat_message (metrics) ──
     from services.claude_service import _inject_result_value
     chat_message = _inject_result_value(
         claude_response.get("chat_message", ""), execution_result
     )
 
-    # ── Step 4: Store conversation history ──
     session_store.add_message(request.session_id, "user", {"text": query})
     session_store.add_message(
         request.session_id,
@@ -230,7 +205,6 @@ async def query_data(request: QueryRequest):
         },
     )
 
-    # ── Step 5: Build citations ──
     raw_sources = claude_response.get("sources", []) or []
     citations: list[SourceCitation] = []
     for src in raw_sources:
@@ -248,20 +222,17 @@ async def query_data(request: QueryRequest):
             row_count=row_count,
         ))
 
-    # ── Step 6: Build anomaly warnings ──
     raw_warnings = get_warnings_for_columns(
         getattr(session, "anomalies", {}),
         [c.model_dump() for c in citations],
     )
     anomaly_warnings = [AnomalyWarning(**w) for w in raw_warnings]
 
-    # ── Step 7: Build artifact ──
     artifact = claude_response.get("artifact")
     artifact_obj = None
     if artifact and isinstance(artifact, dict) and artifact.get("content"):
         html_content = artifact["content"]
         
-        # Inject the real computed data into the HTML JS payload
         if "RESULT_DATA" in html_content and execution_result:
             import json
             try:

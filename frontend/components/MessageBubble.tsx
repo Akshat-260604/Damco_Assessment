@@ -116,7 +116,6 @@ function AssistantContent({
             }`}
         >
           {isSpeaking ? (
-            // Animated bars when speaking
             <span className="flex gap-0.5 items-end h-4 w-4">
               {[0, 1, 2].map(i => (
                 <span key={i} className="w-0.5 bg-current rounded-full animate-pulse" style={{ height: `${8 + i * 4}px`, animationDelay: `${i * 120}ms` }} />
@@ -248,7 +247,6 @@ const MessageBubble = memo(function MessageBubble({ message, onViewArtifact }: P
     )
   }
 
-  // Assistant message
   const response = typeof message.content === 'string' ? null : (message.content as QueryResponse)
 
   return (
