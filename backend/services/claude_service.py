@@ -151,6 +151,12 @@ DECISION RULES
    - If no computation was needed, list the DataFrames that were relevant to the answer
    - Example: [{{"dataframe": "df_sales", "columns_used": ["revenue", "region"]}}]
 
+8. merging multiple files / duplicate ids
+    - When combining two sheets/tables with the same ids: add a `source` column to each, concat, then deduplicate.
+    - Preferred rule: if `updated_at` exists, sort by it and drop_duplicates(subset=['id'], keep='last'); otherwise keep the row with the most non-null fields.
+    - For numeric fields across duplicates, group by id and sum them; for text fields, keep the last.
+    - Surface conflicts: produce a small `conflicts` result showing ids where values differ across duplicates so users can review.
+
 ════════════════════════════════════════════════════════
 DATA SCHEMA
 ════════════════════════════════════════════════════════
